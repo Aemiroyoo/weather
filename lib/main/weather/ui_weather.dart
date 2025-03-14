@@ -1,8 +1,21 @@
+import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:api_weather/api/album/fect_album/fect.dart';
 import 'package:api_weather/api/album/model/weather.dart';
 import 'package:api_weather/utils/constant/app.color.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:flutter/material.dart';
+
+// void main() {
+//   runApp(const MyApp());
+// }
+
+// class MyApp extends StatelessWidget {
+//   const MyApp({super.key});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(debugShowCheckedModeBanner: false, home: UiWeather());
+//   }
+// }
 
 class UiWeather extends StatefulWidget {
   const UiWeather({super.key});
@@ -13,6 +26,7 @@ class UiWeather extends StatefulWidget {
 
 class _UiWeatherState extends State<UiWeather> {
   String locationText = "Mendeteksi lokasi...";
+  late Future<Welcome?> weatherData;
   Future<bool> isLocationEnabled() async {
     return await Geolocator.isLocationServiceEnabled();
   }
@@ -21,16 +35,15 @@ class _UiWeatherState extends State<UiWeather> {
   void initState() {
     super.initState();
     checkPermission();
+    weatherData = fetchWeather();
   }
 
   /// 🔹 Periksa Izin Lokasi
   void checkPermission() async {
     bool granted = await requestLocationPermission();
     if (granted) {
-      print("Izin lokasi diberikan!");
-      fetchUserLocation(); // Panggil fungsi untuk mengambil lokasi
+      fetchUserLocation();
     } else {
-      print("Izin lokasi ditolak!");
       setState(() {
         locationText = "Akses lokasi tidak diizinkan";
       });
@@ -76,9 +89,36 @@ class _UiWeatherState extends State<UiWeather> {
     );
   }
 
+  /// ✅ Widget untuk Menampilkan Status GPS
+  Widget _buildLocationStatus(String text, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white, size: 16),
+          const SizedBox(width: 5),
+          Text(
+            text,
+            style: const TextStyle(
+              fontSize: 14.0,
+              color: Colors.white,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.blue.shade900,
       body: Stack(
         children: [
           /// 🔹 Background Image dengan Fallback
@@ -101,15 +141,12 @@ class _UiWeatherState extends State<UiWeather> {
               child: Column(
                 children: [
                   /// 🔹 Judul Aplikasi
-                  RichText(
-                    textAlign: TextAlign.center,
-                    text: const TextSpan(
-                      text: 'Jakarta Weather Forecast',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22.0,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  const Text(
+                    'Jakarta Weather Forecast',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22.0,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
 
@@ -138,11 +175,11 @@ class _UiWeatherState extends State<UiWeather> {
                     ),
                   ),
 
-                  const SizedBox(height: 50),
+                  const SizedBox(height: 20),
 
                   /// 🔹 Fetch Data Cuaca dari API
                   FutureBuilder<Welcome>(
-                    future: fetchWeather(), // Ambil data dari API
+                    future: fetchWeather(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const CircularProgressIndicator();
@@ -153,9 +190,12 @@ class _UiWeatherState extends State<UiWeather> {
                           Icons.error_outline,
                         );
                       } else {
+                        List<double>? temperatures =
+                            snapshot.data?.hourly?.temperature2M;
                         String temperature =
-                            // "${snapshot.data?.temperature ?? '--'}";
-                            "${snapshot.data?.elevation ?? '--'}";
+                            (temperatures != null && temperatures.isNotEmpty)
+                                ? "${temperatures[0].toInt()}"
+                                : "--";
                         String condition =
                             snapshot.data?.timezone ?? "Tidak ada data";
                         IconData weatherIcon = _getWeatherIcon(condition);
@@ -168,34 +208,13 @@ class _UiWeatherState extends State<UiWeather> {
                       }
                     },
                   ),
+
+                  const SizedBox(height: 20),
+
+                  /// 🔹 **Kartu Detail Cuaca**
+                  WeatherDetailCard(),
                 ],
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 🔹 Widget untuk Menampilkan Status GPS
-  Widget _buildLocationStatus(String text, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: Colors.white, size: 16),
-          const SizedBox(width: 5),
-          Text(
-            text,
-            style: const TextStyle(
-              fontSize: 14.0,
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -237,7 +256,7 @@ class _UiWeatherState extends State<UiWeather> {
           ],
         ),
 
-        /// 🔹 Kondisi Cuaca (Berawan, Hujan, Cerah, dll.)
+        /// 🔹 Kondisi Cuaca
         Text(
           condition,
           style: TextStyle(
@@ -251,7 +270,7 @@ class _UiWeatherState extends State<UiWeather> {
 
         /// 🔹 Indeks Kualitas Udara (IKU)
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.2),
             borderRadius: BorderRadius.circular(20),
@@ -279,13 +298,95 @@ class _UiWeatherState extends State<UiWeather> {
   /// 🔹 Fungsi untuk Menentukan Ikon Berdasarkan Kondisi Cuaca
   IconData _getWeatherIcon(String condition) {
     if (condition.toLowerCase().contains("hujan")) {
-      return Icons.beach_access; // Ikon hujan
+      return Icons.beach_access;
     } else if (condition.toLowerCase().contains("berawan")) {
-      return Icons.wb_cloudy; // Ikon berawan
+      return Icons.wb_cloudy;
     } else if (condition.toLowerCase().contains("cerah")) {
-      return Icons.wb_sunny; // Ikon cerah
+      return Icons.wb_sunny;
     } else {
-      return Icons.device_thermostat; // Default ikon suhu
+      return Icons.device_thermostat;
     }
+  }
+}
+
+/// ✅ **Widget untuk Detail Cuaca**
+class WeatherDetailCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: const [
+              WeatherDetailItem(title: "Terasa seperti", value: "31°C"),
+              WeatherDetailItem(title: "Kelembaban", value: "80%"),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: const [
+              WeatherDetailItem(title: "Peluang hujan", value: "49%"),
+              WeatherDetailItem(title: "Tekanan", value: "1010mbar"),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: const [
+              WeatherDetailItem(title: "Kecepatan", value: "18.0km/j"),
+              WeatherDetailItem(title: "Indeks UV", value: "0"),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// ✅ **Widget untuk Menampilkan Detail Cuaca**
+class WeatherDetailItem extends StatelessWidget {
+  final String title;
+  final String value;
+
+  const WeatherDetailItem({
+    super.key,
+    required this.title,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
