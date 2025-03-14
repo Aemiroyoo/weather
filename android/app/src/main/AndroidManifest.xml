@@ -1,8 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
     <application
+  
+
         android:label="api_weather"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher">\
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -30,6 +36,8 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <uses-feature android:name="android.hardware.location.gps"/>
+        <uses-feature android:name="android.hardware.location.network"/>    
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

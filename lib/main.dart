@@ -1,5 +1,7 @@
+import 'package:api_weather/main/weather/ui_weather.dart';
 import 'package:api_weather/main/weather/weather_app.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 
 void main() {
   runApp(const MyApp());
@@ -7,6 +9,18 @@ void main() {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
+  Future<bool> requestLocationPermission() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.deniedForever) {
+        return false; // Pengguna menolak izin permanen
+      }
+    }
+    return permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse;
+  }
 
   // This widget is the root of your application.
   @override
@@ -31,7 +45,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const WeatherAppScreen(),
+      home: const UiWeather(),
     );
   }
 }
