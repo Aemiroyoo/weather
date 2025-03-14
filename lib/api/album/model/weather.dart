@@ -35,10 +35,13 @@ class Welcome {
     latitude: json["latitude"]?.toDouble(),
     longitude: json["longitude"]?.toDouble(),
     generationtimeMs: json["generationtime_ms"]?.toDouble(),
-    utcOffsetSeconds: json["utc_offset_seconds"],
+    // utcOffsetSeconds: json["utc_offset_seconds"],
+    utcOffsetSeconds: (json["utc_offset_seconds"] as num?)?.toInt(),
     timezone: json["timezone"],
     timezoneAbbreviation: json["timezone_abbreviation"],
-    elevation: json["elevation"],
+    // elevation: json["elevation"],
+    elevation: (json["elevation"] as num?)?.toInt(),
+
     hourlyUnits:
         json["hourly_units"] == null
             ? null
