@@ -119,105 +119,88 @@ class _UiWeatherState extends State<UiWeather> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.blue.shade900,
-      body: Stack(
-        children: [
-          /// 🔹 Background Image dengan Fallback
-          Image.asset(
-            'assets/images/6109685.jpg',
-            height: double.infinity,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(color: Colors.blue.shade300);
-            },
-          ),
+      body: FutureBuilder<Welcome?>(
+        future: weatherData, // 🔹 Gunakan Future yang sudah ada
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError || snapshot.data == null) {
+            return Center(child: Text('Terjadi kesalahan: ${snapshot.error}'));
+          }
 
-          /// 🔹 Overlay Transparan untuk Efek Gelap
-          Container(color: Colors.black.withOpacity(0.35)),
+          // 🔹 Pastikan data tidak null
+          final weather = snapshot.data!;
 
-          Padding(
-            padding: const EdgeInsets.only(top: 55.0),
-            child: Center(
-              child: Column(
-                children: [
-                  /// 🔹 Judul Aplikasi
-                  const Text(
-                    'Jakarta Weather Forecast',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22.0,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-
-                  /// 🔹 Status GPS (Hidup atau Tidak)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: FutureBuilder<bool>(
-                      future: isLocationEnabled(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const CircularProgressIndicator();
-                        } else if (snapshot.hasError ||
-                            snapshot.data == false) {
-                          return _buildLocationStatus(
-                            "Hidupkan layanan lokasi",
-                            Icons.cloud_off,
-                          );
-                        } else {
-                          return _buildLocationStatus(
-                            "Lokasi Aktif",
-                            Icons.location_on,
-                          );
-                        }
-                      },
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  /// 🔹 Fetch Data Cuaca dari API
-                  FutureBuilder<Welcome>(
-                    future: fetchWeather(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const CircularProgressIndicator();
-                      } else if (snapshot.hasError || snapshot.data == null) {
-                        return _buildWeatherDisplay(
-                          "--",
-                          "Tidak ada data",
-                          Icons.error_outline,
-                        );
-                      } else {
-                        List<double>? temperatures =
-                            snapshot.data?.hourly?.temperature2M;
-                        String temperature =
-                            (temperatures != null && temperatures.isNotEmpty)
-                                ? "${temperatures[0].toInt()}"
-                                : "--";
-                        String condition =
-                            snapshot.data?.timezone ?? "Tidak ada data";
-                        IconData weatherIcon = _getWeatherIcon(condition);
-
-                        return _buildWeatherDisplay(
-                          temperature,
-                          condition,
-                          weatherIcon,
-                        );
-                      }
-                    },
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  /// 🔹 **Kartu Detail Cuaca**
-                  WeatherDetailCard(),
-                ],
+          return Stack(
+            children: [
+              Image.asset(
+                'assets/images/6109685.jpg',
+                height: double.infinity,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(color: Colors.blue.shade300);
+                },
               ),
-            ),
-          ),
-        ],
+              Container(color: Colors.black.withOpacity(0.35)),
+              Padding(
+                padding: const EdgeInsets.only(top: 55.0),
+                child: Center(
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Weather Forecast',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22.0,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: FutureBuilder<bool>(
+                          // menangani operasi asinkron
+                          future:
+                              isLocationEnabled(), // panggil fungsi untuk mengecek apakah layanan lokasi aktif atau tidak
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const CircularProgressIndicator();
+                            } else if (snapshot.hasError ||
+                                snapshot.data == false) {
+                              return _buildLocationStatus(
+                                "Hidupkan layanan lokasi",
+                                Icons.cloud_off,
+                              );
+                            } else {
+                              return _buildLocationStatus(
+                                "Lokasi Aktif",
+                                Icons.location_on,
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      /// 🔹 **Tampilkan Cuaca dari API**
+                      _buildWeatherDisplay(
+                        "${weather.hourly?.temperature2M?[0]?.toInt() ?? "--"}",
+                        weather.timezone ?? "Tidak ada data",
+                        _getWeatherIcon(weather.timezone ?? ""),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      /// 🔹 **Kartu Detail Cuaca** (Kirimkan `weather` ke dalam widget)
+                      WeatherDetailCard(weather: weather),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -230,6 +213,12 @@ class _UiWeatherState extends State<UiWeather> {
   ) {
     return Column(
       children: [
+        const SizedBox(height: 10),
+
+        /// 🔹 Ikon Cuaca (Berdasarkan Kondisi)
+        Icon(icon, size: 50, color: Colors.white),
+
+        /// 🔹 Suhu
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,13 +226,13 @@ class _UiWeatherState extends State<UiWeather> {
             Text(
               temperature,
               style: TextStyle(
-                fontSize: 110.0,
+                fontSize: 120.0,
                 fontWeight: FontWeight.bold,
                 color: Colors.white.withOpacity(0.8),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(top: 23.0),
+              padding: const EdgeInsets.only(top: 20.0),
               child: Text(
                 "°C",
                 style: TextStyle(
@@ -311,6 +300,13 @@ class _UiWeatherState extends State<UiWeather> {
 
 /// ✅ **Widget untuk Detail Cuaca**
 class WeatherDetailCard extends StatelessWidget {
+  final Welcome weather; // 🔹 Tambahkan parameter ini
+
+  const WeatherDetailCard({
+    super.key,
+    required this.weather,
+  }); // 🔹 Wajib dikirimkan
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -324,23 +320,47 @@ class WeatherDetailCard extends StatelessWidget {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              WeatherDetailItem(title: "Terasa seperti", value: "31°C"),
-              WeatherDetailItem(title: "Kelembaban", value: "80%"),
+            children: [
+              WeatherDetailItem(
+                title: "Terasa seperti",
+                value:
+                    "${weather.hourly?.temperature2M?.isNotEmpty == true ? weather.hourly!.temperature2M![0].toStringAsFixed(1) : "31"}°C",
+              ),
+              WeatherDetailItem(
+                title: "Kelembaban",
+                value:
+                    "${weather.hourly?.dewPoint2M?.isNotEmpty == true ? weather.hourly!.dewPoint2M![0].toStringAsFixed(1) : "80"}%",
+              ),
             ],
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              WeatherDetailItem(title: "Peluang hujan", value: "49%"),
-              WeatherDetailItem(title: "Tekanan", value: "1010mbar"),
+            children: [
+              WeatherDetailItem(
+                title: "Peluang hujan",
+                value:
+                    "${weather.hourly?.precipitationProbability?.isNotEmpty == true ? weather.hourly!.precipitationProbability![0].toString() : "49"}%",
+              ),
+              WeatherDetailItem(
+                title: "Tekanan",
+                value:
+                    "${weather.current?.surfacePressure != null ? weather.current!.surfacePressure!.toStringAsFixed(1) : "1010"} mbar",
+              ),
             ],
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              WeatherDetailItem(title: "Kecepatan", value: "18.0km/j"),
-              WeatherDetailItem(title: "Indeks UV", value: "0"),
+            children: [
+              WeatherDetailItem(
+                title: "Kecepatan Angin",
+                value:
+                    "${weather.hourly?.windSpeed80M?.isNotEmpty == true ? weather.hourly!.windSpeed80M![0].toStringAsFixed(1) : "18.0"} km/j",
+              ),
+              WeatherDetailItem(
+                title: "Indeks UV",
+                value:
+                    "${weather.daily?.uvIndexMax?.isNotEmpty == true ? weather.daily!.uvIndexMax![0].toStringAsFixed(1) : "0"}",
+              ),
             ],
           ),
         ],
