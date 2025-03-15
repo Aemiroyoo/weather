@@ -15,7 +15,7 @@ class Welcome {
   final int? utcOffsetSeconds;
   final String? timezone;
   final String? timezoneAbbreviation;
-  final int? elevation;
+  final double? elevation;
   final CurrentUnits? currentUnits;
   final Current? current;
   final HourlyUnits? hourlyUnits;
@@ -189,7 +189,7 @@ class DailyUnits {
 class Hourly {
   final List<String>? time;
   final List<double>? dewPoint2M;
-  final List<int>? rain;
+  final List<double>? rain;
   final List<int>? precipitationProbability;
   final List<double>? temperature80M;
   final List<double>? windSpeed80M;
@@ -217,7 +217,9 @@ class Hourly {
               json["dew_point_2m"]!.map((x) => x?.toDouble()),
             ),
     rain:
-        json["rain"] == null ? [] : List<int>.from(json["rain"]!.map((x) => x)),
+        json["rain"] == null
+            ? []
+            : List<double>.from(json["rain"]!.map((x) => x)),
     precipitationProbability:
         json["precipitation_probability"] == null
             ? []

@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:api_weather/api/album/fect_album/fect.dart';
@@ -159,9 +161,7 @@ class _UiWeatherState extends State<UiWeather> {
                       Padding(
                         padding: const EdgeInsets.only(top: 8.0),
                         child: FutureBuilder<bool>(
-                          // menangani operasi asinkron
-                          future:
-                              isLocationEnabled(), // panggil fungsi untuk mengecek apakah layanan lokasi aktif atau tidak
+                          future: isLocationEnabled(),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
                                 ConnectionState.waiting) {
@@ -187,7 +187,9 @@ class _UiWeatherState extends State<UiWeather> {
                       _buildWeatherDisplay(
                         "${weather.hourly?.temperature2M?[0]?.toInt() ?? "--"}",
                         weather.timezone ?? "Tidak ada data",
-                        _getWeatherIcon(weather.timezone ?? ""),
+                        _getWeatherIcon(
+                          weather.timezone ?? "",
+                        ), // 🔹 Fungsi ini dipanggil di sini
                       ),
 
                       const SizedBox(height: 20),
@@ -213,12 +215,6 @@ class _UiWeatherState extends State<UiWeather> {
   ) {
     return Column(
       children: [
-        const SizedBox(height: 10),
-
-        /// 🔹 Ikon Cuaca (Berdasarkan Kondisi)
-        Icon(icon, size: 50, color: Colors.white),
-
-        /// 🔹 Suhu
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,7 +228,7 @@ class _UiWeatherState extends State<UiWeather> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(top: 20.0),
+              padding: const EdgeInsets.only(top: 23.0),
               child: Text(
                 "°C",
                 style: TextStyle(
@@ -324,12 +320,12 @@ class WeatherDetailCard extends StatelessWidget {
               WeatherDetailItem(
                 title: "Terasa seperti",
                 value:
-                    "${weather.hourly?.temperature2M?.isNotEmpty == true ? weather.hourly!.temperature2M![0].toStringAsFixed(1) : "31"}°C",
+                    "${weather.hourly?.temperature2M?[0]?.toStringAsFixed(1) ?? "31"}°C",
               ),
               WeatherDetailItem(
                 title: "Kelembaban",
                 value:
-                    "${weather.hourly?.dewPoint2M?.isNotEmpty == true ? weather.hourly!.dewPoint2M![0].toStringAsFixed(1) : "80"}%",
+                    "${weather.hourly?.dewPoint2M?[0]?.toStringAsFixed(1) ?? "80"}%",
               ),
             ],
           ),
@@ -339,12 +335,12 @@ class WeatherDetailCard extends StatelessWidget {
               WeatherDetailItem(
                 title: "Peluang hujan",
                 value:
-                    "${weather.hourly?.precipitationProbability?.isNotEmpty == true ? weather.hourly!.precipitationProbability![0].toString() : "49"}%",
+                    "${weather.hourly?.precipitationProbability?[0] ?? "49"}%",
               ),
               WeatherDetailItem(
                 title: "Tekanan",
                 value:
-                    "${weather.current?.surfacePressure != null ? weather.current!.surfacePressure!.toStringAsFixed(1) : "1010"} mbar",
+                    "${weather.current?.surfacePressure?.toStringAsFixed(1) ?? "1010"} mbar",
               ),
             ],
           ),
@@ -354,12 +350,12 @@ class WeatherDetailCard extends StatelessWidget {
               WeatherDetailItem(
                 title: "Kecepatan Angin",
                 value:
-                    "${weather.hourly?.windSpeed80M?.isNotEmpty == true ? weather.hourly!.windSpeed80M![0].toStringAsFixed(1) : "18.0"} km/j",
+                    "${weather.hourly?.windSpeed80M?[0]?.toStringAsFixed(1) ?? "18.0"} km/j",
               ),
               WeatherDetailItem(
                 title: "Indeks UV",
                 value:
-                    "${weather.daily?.uvIndexMax?.isNotEmpty == true ? weather.daily!.uvIndexMax![0].toStringAsFixed(1) : "0"}",
+                    "${weather.daily?.uvIndexMax?[0]?.toStringAsFixed(1) ?? "0"}",
               ),
             ],
           ),
